@@ -1,0 +1,100 @@
+// Copyright (c) 2026 Team 2342
+// https://github.com/FRCTeamPhoenix
+//
+// This source code is licensed under the MIT License.
+// See the LICENSE file in the root directory of this project.
+
+package org.team2342.lib.util;
+
+import lombok.Getter;
+import lombok.Setter;
+import org.wpilib.command2.button.Trigger;
+import org.wpilib.driverstation.Alliance;
+import org.wpilib.driverstation.DriverStationErrors;
+import org.wpilib.driverstation.MatchState;
+import org.wpilib.driverstation.RobotState;
+import org.wpilib.fields.Field;
+import org.wpilib.fields.Fields;
+import org.wpilib.math.geometry.Pose2d;
+import org.wpilib.math.geometry.Pose3d;
+import org.wpilib.math.geometry.Rotation2d;
+import org.wpilib.math.geometry.Rotation3d;
+import org.wpilib.math.geometry.Translation2d;
+import org.wpilib.math.geometry.Translation3d;
+
+/** Class with alliance-related utility functions */
+public class AllianceUtils {
+
+  @Getter @Setter
+  private static Field fieldLayout = Field.loadField(Fields.FRC_2026_REBUILT_ANDY_MARK);
+
+  public static void loadFieldLayout(String resourcePath) {
+    try {
+      fieldLayout = Field.loadFromResource(resourcePath);
+    } catch (Exception e) {
+      DriverStationErrors.reportError("Failed to load AprilTagFieldLayout from resource", false);
+    }
+  }
+
+  public static boolean isRedAlliance() {
+    var alliance = MatchState.getAlliance();
+
+    if (alliance.isEmpty())
+      DriverStationErrors.reportError("Alliance variable is empty, defaulting to red!", false);
+    return alliance.orElse(Alliance.RED) == Alliance.RED;
+  }
+
+  public static boolean isBlueAlliance() {
+    return !isRedAlliance();
+  }
+
+  public static Trigger driverStationAttachedTrigger() {
+    return new Trigger(RobotState::isDSAttached);
+  }
+
+  public static Pose2d flipToAlliance(Pose2d bluePose, Field field) {
+    return isRedAlliance()
+        ? new Pose2d(
+            -bluePose.getX(), -bluePose.getY(), bluePose.getRotation().rotateBy(Rotation2d.PI))
+        : bluePose;
+  }
+
+  public static Pose3d flipToAlliance(Pose3d bluePose, Field field) {
+    return isRedAlliance()
+        ? new Pose3d(
+            -bluePose.getX(),
+            -bluePose.getY(),
+            bluePose.getZ(),
+            bluePose.getRotation().rotateBy(new Rotation3d(0.0, 0.0, Math.PI)))
+        : bluePose;
+  }
+
+  public static Translation2d flipToAlliance(Translation2d blueTranslation, Field field) {
+    return isRedAlliance()
+        ? new Translation2d(-blueTranslation.getX(), -blueTranslation.getY())
+        : blueTranslation;
+  }
+
+  public static Translation3d flipToAlliance(Translation3d blueTranslation, Field field) {
+    return isRedAlliance()
+        ? new Translation3d(
+            -blueTranslation.getX(), -blueTranslation.getY(), blueTranslation.getZ())
+        : blueTranslation;
+  }
+
+  public static Pose2d flipToAlliance(Pose2d bluePose) {
+    return flipToAlliance(bluePose, fieldLayout);
+  }
+
+  public static Pose3d flipToAlliance(Pose3d bluePose) {
+    return flipToAlliance(bluePose, fieldLayout);
+  }
+
+  public static Translation2d flipToAlliance(Translation2d blueTranslation) {
+    return flipToAlliance(blueTranslation, fieldLayout);
+  }
+
+  public static Translation3d flipToAlliance(Translation3d blueTranslation) {
+    return flipToAlliance(blueTranslation, fieldLayout);
+  }
+}

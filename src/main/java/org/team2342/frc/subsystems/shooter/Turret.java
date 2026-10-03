@@ -1,0 +1,132 @@
+// Copyright (c) 2026 Team 2342
+// https://github.com/FRCTeamPhoenix
+//
+// This source code is licensed under the MIT License.
+// See the LICENSE file in the root directory of this project.
+
+package org.team2342.frc.subsystems.shooter;
+
+import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
+import org.littletonrobotics.junction.AutoLogOutput;
+import org.littletonrobotics.junction.Logger;
+import org.team2342.frc.Constants.TurretConstants;
+import org.team2342.frc.util.ExecutionLogger;
+import org.team2342.lib.motors.smart.SmartMotorIO;
+import org.team2342.lib.motors.smart.SmartMotorIOInputsAutoLogged;
+import org.wpilib.command2.Command;
+import org.wpilib.command2.SubsystemBase;
+import org.wpilib.math.geometry.Rotation2d;
+import org.wpilib.math.util.MathUtil;
+import org.wpilib.util.Alert;
+import org.wpilib.util.Alert.Level;
+
+public class Turret extends SubsystemBase {
+
+  private final SmartMotorIO turretMotor;
+  private final SmartMotorIOInputsAutoLogged inputs = new SmartMotorIOInputsAutoLogged();
+  private final Alert motorAlert = new Alert("turret", "Turret motor is disconnected!", Level.HIGH);
+  private double goal = TurretConstants.STARTING_ANGLE;
+
+  public Turret(SmartMotorIO turretMotor) {
+    this.turretMotor = turretMotor;
+    setName("Shooter/Turret");
+    turretMotor.setPosition(TurretConstants.STARTING_ANGLE);
+    setDefaultCommand(run(() -> turretMotor.runVoltage(0.0)));
+  }
+
+  @Override
+  public void periodic() {
+    turretMotor.updateInputs(inputs);
+    Logger.processInputs("Shooter/Turret", inputs);
+    motorAlert.set(!inputs.motorsConnected[0]);
+
+    ExecutionLogger.log("Shooter/Turret");
+  }
+
+  public void runPosition(Rotation2d target) {
+    this.goal = calculateTurretAngle(target);
+    turretMotor.runPosition(goal);
+  }
+
+  public void runPosition(Supplier<Rotation2d> target) {
+    this.goal = calculateTurretAngle(target.get());
+    turretMotor.runPosition(goal);
+  }
+
+  public void runPositionNoLimit(DoubleSupplier target) {
+    this.goal = target.getAsDouble();
+    turretMotor.runPosition(goal);
+  }
+
+  public Command runPositionCommand(Rotation2d target) {
+    return run(() -> runPosition(target)).withName("Turret RunPosition");
+  }
+
+  public Command runPositionNoLimitCommand(DoubleSupplier target) {
+    return run(() -> runPositionNoLimit(target)).withName("Turret RunPosition No Limit");
+  }
+
+  public Command runPositionCommand(Supplier<Rotation2d> target) {
+    return run(() -> runPosition(target)).withName("Turret RunPosition");
+  }
+
+  public Command goToPositionCommand(Rotation2d target) {
+    return run(() -> runPosition(target))
+        .until(() -> Math.abs(inputs.positionRad - goal) <= TurretConstants.AT_POSITION_THRESHOLD)
+        .withName("Turret GoToPosition");
+  }
+
+  public Command goToPositionCommand(Supplier<Rotation2d> target) {
+    return run(() -> runPosition(target))
+        .until(() -> Math.abs(inputs.positionRad - goal) <= TurretConstants.AT_POSITION_THRESHOLD)
+        .withName("Turret GoToPosition");
+  }
+
+  public Command runVoltage(double voltage) {
+    return run(() -> turretMotor.runVoltage(voltage)).withName("Turret Voltage");
+  }
+
+  public Command stop() {
+    return runOnce(() -> turretMotor.runVoltage(0.0));
+  }
+
+  @AutoLogOutput(key = "Shooter/Turret/Position")
+  public Rotation2d getTurretPosition() {
+    return Rotation2d.fromRadians(inputs.positionRad);
+  }
+
+  public double getTurretPositionAsADouble() {
+    return inputs.positionRad;
+  }
+
+  public double getTurretVelocity() {
+    return inputs.velocityRadPerSec;
+  }
+
+  @AutoLogOutput(key = "Shooter/Turret/Setpoint")
+  public Rotation2d getTurretSetpoint() {
+    return new Rotation2d(goal);
+  }
+
+  public boolean atGoal() {
+    return Math.abs(inputs.positionRad - goal) <= TurretConstants.AT_POSITION_THRESHOLD;
+  }
+
+  public boolean aroundGoal() {
+    return Math.abs(inputs.positionRad - goal) <= 0.05;
+  }
+
+  public void zeroTurret() {
+    turretMotor.setPosition(TurretConstants.STARTING_ANGLE);
+    goal = TurretConstants.STARTING_ANGLE;
+  }
+
+  private double calculateTurretAngle(Rotation2d angle) {
+    double calculatedAngle = MathUtil.inputModulus(angle.getRadians(), -Math.PI, Math.PI);
+    if (calculatedAngle < 0) calculatedAngle += 2 * Math.PI;
+    if (calculatedAngle > Math.PI * 2) calculatedAngle -= 2 * Math.PI;
+    return Math.clamp(
+        calculatedAngle, TurretConstants.MIN_TURRET_ANGLE, TurretConstants.MAX_TURRET_ANGLE);
+  }
+}

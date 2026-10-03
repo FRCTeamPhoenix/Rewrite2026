@@ -1,0 +1,139 @@
+// Copyright (c) 2026 Team 2342
+// https://github.com/FRCTeamPhoenix
+//
+// This source code is licensed under the MIT License.
+// See the LICENSE file in the root directory of this project.
+
+package org.team2342.frc.subsystems.shooter;
+
+import static org.wpilib.units.Units.Volts;
+
+import java.util.function.DoubleSupplier;
+import org.littletonrobotics.junction.AutoLogOutput;
+import org.littletonrobotics.junction.Logger;
+import org.team2342.frc.Constants.ShooterConstants;
+import org.team2342.frc.util.ExecutionLogger;
+import org.team2342.lib.motors.smart.SmartMotorIO;
+import org.team2342.lib.motors.smart.SmartMotorIOInputsAutoLogged;
+import org.wpilib.command2.Command;
+import org.wpilib.command2.SubsystemBase;
+import org.wpilib.command2.sysid.SysIdRoutine;
+import org.wpilib.util.Alert;
+import org.wpilib.util.Alert.Level;
+
+public class Flywheel extends SubsystemBase {
+  private final SmartMotorIO motor;
+  private final SmartMotorIOInputsAutoLogged motorInputs = new SmartMotorIOInputsAutoLogged();
+
+  private final Alert motorAlert =
+      new Alert("flywheel", "Flywheel motor is disconnected!", Level.HIGH);
+
+  private final SysIdRoutine sysId;
+
+  private boolean atGoal;
+
+  public Flywheel(SmartMotorIO motor) {
+    this.motor = motor;
+
+    sysId =
+        new SysIdRoutine(
+            new SysIdRoutine.Config(
+                null,
+                null,
+                null,
+                (state) -> Logger.recordOutput("Shooter/Flywheel/SysIdState", state.toString())),
+            new SysIdRoutine.Mechanism(
+                (voltage) -> motor.runVoltage(voltage.in(Volts)),
+                (log) ->
+                    Logger.recordOutput("Shooter/Flywheel/Voltage", motorInputs.appliedVolts[0]),
+                this));
+
+    setName("Shooter/Flywheel");
+    setDefaultCommand(run(() -> motor.runVoltage(0.0)));
+  }
+
+  @Override
+  public void periodic() {
+    motor.updateInputs(motorInputs);
+    Logger.processInputs("Shooter/Flywheel", motorInputs);
+
+    motorAlert.set(!motorInputs.motorsConnected[0]);
+
+    ExecutionLogger.log("Shooter/Flywheel");
+  }
+
+  public void runVelocity(double metersPerSec) {
+    double radPerSec = metersPerSec / ShooterConstants.FLYWHEEL_RADIUS_METERS;
+    atGoal =
+        Math.abs(metersPerSec - getVelocityMetersPerSec())
+            <= ShooterConstants.FLYWHEEL_AT_GOAL_TOLERANCE;
+    Logger.recordOutput("Shooter/Flywheel/SetpointMetersPerSec", metersPerSec);
+    motor.runVelocity(radPerSec);
+  }
+
+  public void runVelocity(DoubleSupplier metersPerSec) {
+    double radPerSec = metersPerSec.getAsDouble() / ShooterConstants.FLYWHEEL_RADIUS_METERS;
+    atGoal =
+        Math.abs(radPerSec - motorInputs.velocityRadPerSec)
+            <= ShooterConstants.FLYWHEEL_AT_GOAL_TOLERANCE;
+    Logger.recordOutput("Shooter/Flywheel/SetpointMetersPerSec", metersPerSec);
+    motor.runVelocity(radPerSec);
+  }
+
+  private void warmUp(DoubleSupplier idleSpeed) {
+    if (getVelocityMetersPerSec() > idleSpeed.getAsDouble()) {
+      motor.runVoltage(0.0);
+    } else {
+      runVelocity(idleSpeed);
+    }
+  }
+
+  public Command shoot(double metersPerSec) {
+    return run(() -> runVelocity(metersPerSec)).withName("Run Shooter");
+  }
+
+  public Command shoot(DoubleSupplier metersPerSec) {
+    return run(() -> runVelocity(metersPerSec)).withName("Run Shooter");
+  }
+
+  public Command warmUpFixed() {
+    return run(() -> warmUp(() -> ShooterConstants.IDLE_SPEED)).withName("Warm Up Shooter");
+  }
+
+  public Command warmUpCommand(DoubleSupplier metersPerSec) {
+    return run(() -> warmUp(metersPerSec)).withName("Warm Up Shooter");
+  }
+
+  public Command runVoltage(double volts) {
+    return run(() -> runVoltage(volts)).withName("Run Shooter Volts");
+  }
+
+  public Command stop() {
+    return runOnce(() -> motor.runVoltage(0.0)).withName("Shooter Stop");
+  }
+
+  public boolean atGoal() {
+    return atGoal;
+  }
+
+  /** Returns a command to run a quasistatic test in the specified direction. */
+  public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
+    return run(() -> runVoltage(0.0))
+        .withTimeout(1.0)
+        .andThen(sysId.quasistatic(direction))
+        .withName("Flywheel Quasistatic");
+  }
+
+  /** Returns a command to run a dynamic test in the specified direction. */
+  public Command sysIdDynamic(SysIdRoutine.Direction direction) {
+    return run(() -> runVoltage(0.0))
+        .withTimeout(1.0)
+        .andThen(sysId.dynamic(direction))
+        .withName("Flywheel Dynamic");
+  }
+
+  @AutoLogOutput(key = "Shooter/Flywheel/VelocityMetersPerSec")
+  public double getVelocityMetersPerSec() {
+    return motorInputs.velocityRadPerSec * ShooterConstants.FLYWHEEL_RADIUS_METERS;
+  }
+}

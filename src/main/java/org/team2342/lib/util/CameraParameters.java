@@ -1,0 +1,116 @@
+// Copyright (c) 2026 Team 2342
+// https://github.com/FRCTeamPhoenix
+//
+// This source code is licensed under the MIT License.
+// See the LICENSE file in the root directory of this project.
+
+package org.team2342.lib.util;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import lombok.Getter;
+import lombok.Setter;
+import org.photonvision.simulation.SimCameraProperties;
+import org.wpilib.driverstation.DriverStationErrors;
+import org.wpilib.math.geometry.Rotation2d;
+import org.wpilib.math.geometry.Transform3d;
+import org.wpilib.math.linalg.MatBuilder;
+import org.wpilib.math.linalg.Matrix;
+import org.wpilib.math.linalg.VecBuilder;
+import org.wpilib.math.numbers.N1;
+import org.wpilib.math.numbers.N3;
+import org.wpilib.math.numbers.N8;
+import org.wpilib.math.util.Nat;
+import org.wpilib.system.Filesystem;
+
+public class CameraParameters {
+
+  @Getter @Setter private String cameraName;
+  @Getter @Setter private int resWidth, resHeight;
+  @Getter @Setter private Matrix<N3, N3> cameraMatrix;
+  @Getter @Setter private Matrix<N8, N1> distCoeffs;
+  @Getter @Setter private Transform3d transform;
+
+  public CameraParameters(
+      String cameraName,
+      int resWidth,
+      int resHeight,
+      double avgErrorPx,
+      double errorStdDevPx,
+      Matrix<N3, N3> cameraMatrix,
+      Matrix<N8, N1> distCoeffs,
+      Transform3d transform) {
+    this.cameraName = cameraName;
+    this.resWidth = resWidth;
+    this.resHeight = resHeight;
+    this.cameraMatrix = cameraMatrix;
+    this.distCoeffs = distCoeffs;
+    this.transform = transform;
+  }
+
+  public CameraParameters(String cameraName, int resWidth, int resHeight) {
+    this(cameraName, resWidth, resHeight, Rotation2d.CCW_90DEG);
+  }
+
+  public CameraParameters(String cameraName, int resWidth, int resHeight, Rotation2d fovDiag) {
+    this.cameraName = cameraName;
+    this.resWidth = resWidth;
+    this.resHeight = resHeight;
+
+    if (fovDiag.getDegrees() < 1 || fovDiag.getDegrees() > 179) {
+      fovDiag = Rotation2d.fromDegrees(Math.clamp(fovDiag.getDegrees(), 1, 179));
+      DriverStationErrors.reportError(
+          "Requested invalid FOV! Clamping between (1, 179) degrees...", false);
+    }
+    double resDiag = Math.hypot(resWidth, resHeight);
+    double diagRatio = Math.tan(fovDiag.getRadians() / 2);
+    var fovWidth = new Rotation2d(Math.atan(diagRatio * (resWidth / resDiag)) * 2);
+    var fovHeight = new Rotation2d(Math.atan(diagRatio * (resHeight / resDiag)) * 2);
+
+    // assume no distortion
+    distCoeffs = VecBuilder.fill(0, 0, 0, 0, 0, 0, 0, 0);
+
+    // assume centered principal point (pixels)
+    double cx = resWidth / 2.0 - 0.5;
+    double cy = resHeight / 2.0 - 0.5;
+
+    // use given fov to determine focal point (pixels)
+    double fx = cx / Math.tan(fovWidth.getRadians() / 2.0);
+    double fy = cy / Math.tan(fovHeight.getRadians() / 2.0);
+
+    // create camera intrinsics matrix
+    cameraMatrix = MatBuilder.fill(Nat.N3(), Nat.N3(), fx, 0, cx, 0, fy, cy, 0, 0, 1);
+  }
+
+  public CameraParameters(String cameraName, int resWidth, int resHeight, Path path)
+      throws IOException {
+    this.cameraName = cameraName;
+    SimCameraProperties prop = new SimCameraProperties(path, resWidth, resHeight);
+    this.resWidth = resWidth;
+    this.resHeight = resHeight;
+    this.cameraMatrix = prop.getIntrinsics();
+    this.distCoeffs = prop.getDistCoeffs();
+  }
+
+  public static CameraParameters loadFromName(String cameraName, int resWidth, int resHeight) {
+    try {
+      return new CameraParameters(
+          cameraName,
+          resWidth,
+          resHeight,
+          Filesystem.getDeployDirectory()
+              .toPath()
+              .resolve("calibrations/" + cameraName + "_" + resWidth + ".json"));
+    } catch (Exception e) {
+      System.out.println(e);
+      DriverStationErrors.reportError(
+          "Error while loading camera " + cameraName + ". Resorting to basic parameters", false);
+      return new CameraParameters(cameraName, resWidth, resHeight);
+    }
+  }
+
+  public CameraParameters withTransform(Transform3d transform) {
+    this.transform = transform;
+    return this;
+  }
+}
