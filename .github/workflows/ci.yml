@@ -5,7 +5,7 @@ on:
   pull_request:
 jobs:
   build:
-    runs-on: ubuntu-24.04.04
+    runs-on: ubuntu-24.04
     container: wpilib/systemcore-cross-ubuntu:2027-24.04
     steps:
       - uses: actions/checkout@v4
@@ -17,11 +17,13 @@ jobs:
         run: ./gradlew build
   spotless:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.BOT2342 }}
+          token: ${{ secrets.BOT2342 || github.token }}
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
