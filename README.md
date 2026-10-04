@@ -1,3 +1,3 @@
-[![CI](https://github.com/FRCTeamPhoenix/Library/actions/workflows/ci.yml/badge.svg)](https://github.com/FRCTeamPhoenix/Library/actions/workflows/ci.yml)
-# Library
-Repository with 2342's library code
+[![CI](https://github.com/FRCTeamPhoenix/Rewrite2026/actions/workflows/ci.yml/badge.svg)](https://github.com/FRCTeamPhoenix/Rewrite2026/actions/workflows/ci.yml)
+# Rewrite2026
+Build2026 rewritten with 2027 WPILib
