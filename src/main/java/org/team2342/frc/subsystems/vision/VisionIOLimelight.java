@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Team 2342
+// Copyright (c) 2026 Team 2342
 // https://github.com/FRCTeamPhoenix
 //
 // This source code is licensed under the MIT License.
@@ -6,6 +6,9 @@
 
 package org.team2342.frc.subsystems.vision;
 
+import com.limelightvision.FiducialTarget;
+import com.limelightvision.Limelight;
+import com.limelightvision.PoseEstimateType;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -18,10 +21,6 @@ import org.team2342.lib.util.Timestamped;
 import org.wpilib.math.geometry.Pose3d;
 import org.wpilib.math.geometry.Rotation2d;
 import org.wpilib.math.geometry.Transform3d;
-
-import com.limelightvision.FiducialTarget;
-import com.limelightvision.Limelight;
-import com.limelightvision.PoseEstimateType;
 
 /** IO implementation for real PhotonVision hardware. */
 public class VisionIOLimelight implements VisionIO {
@@ -37,7 +36,9 @@ public class VisionIOLimelight implements VisionIO {
    * @param robotToCamera The 3D position of the camera relative to the robot.
    */
   public VisionIOLimelight(CameraParameters parameters) {
-    camera = new Limelight(parameters.getCameraName(), GeometryUtils.toPose3d(parameters.getTransform()));
+    camera =
+        new Limelight(
+            parameters.getCameraName(), GeometryUtils.toPose3d(parameters.getTransform()));
     this.robotToCamera = parameters.getTransform();
     this.parameters = parameters;
     poseEstimator = new PhotonPoseEstimator(AllianceUtils.getFieldLayout(), robotToCamera);
