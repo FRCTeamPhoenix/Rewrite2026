@@ -224,7 +224,7 @@ public final class Constants {
             .withStatorCurrentLimit(80)
             .withFeedbackConfig(
                 FeedbackConfig.fused(
-                    CANConstants.INTAKE_PIVOT_ENCODER, PIVOT_GEAR_RATIO, 0.01, true))
+                    CANConstants.INTAKE_PIVOT_ENCODER, PIVOT_GEAR_RATIO, 0.00, false))
             .withProfileConstraintsRad(
                 new TrapezoidProfile.Constraints(
                     Units.degreesToRadians(1800), Units.degreesToRadians(540)));
@@ -313,7 +313,7 @@ public final class Constants {
   }
 
   public static final class CANConstants {
-    public static final CANPort DRIVE_BUS = CANPort.CAN_S0;
+    public static final CANPort DRIVE_BUS = CANPort.CAN_S1;
 
     public static final CANDevice PDH = new CANDevice(62, DRIVE_BUS);
 
