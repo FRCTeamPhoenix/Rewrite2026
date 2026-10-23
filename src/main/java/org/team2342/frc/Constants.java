@@ -6,6 +6,7 @@
 
 package org.team2342.frc;
 
+import com.limelightvision.Limelight;
 import org.team2342.lib.motors.MotorConfig;
 import org.team2342.lib.motors.MotorConfig.IdleMode;
 import org.team2342.lib.motors.smart.SmartMotorConfig;
@@ -84,7 +85,8 @@ public final class Constants {
         CameraParameters.loadFromName(LEFT_CAMERA_NAME, 800, 600).withTransform(LEFT_CAMERA);
 
     public static final CameraParameters RIGHT_CAMERA_PARAMETERS =
-        CameraParameters.loadFromName(LEFT_CAMERA_NAME, 800, 600).withTransform(RIGHT_CAMERA);
+        CameraParameters.loadFromName(Limelight.SYSTEMCORE_USB3, 800, 600)
+            .withTransform(RIGHT_CAMERA);
 
     // Basic filtering thresholds
     public static final double MAX_AMBIGUITY = 0.1;
@@ -239,12 +241,7 @@ public final class Constants {
         2.0 / ShooterConstants.FLYWHEEL_RADIUS_METERS;
 
     public static final PIDFFConfigs FLYWHEEL_PID_CONFIGS =
-        new PIDFFConfigs()
-            .withKP(0.575)
-            .withKI(0.6)
-            .withKS(0.15989)
-            .withKV(0.019968)
-            .withKA(0.005977);
+        new PIDFFConfigs().withKP(0.6).withKI(0.5).withKS(0.1).withKV(0.019968).withKA(0.005977);
 
     public static final SmartMotorConfig FLYWHEEL_CONFIG =
         new SmartMotorConfig()

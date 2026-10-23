@@ -45,6 +45,7 @@ import org.team2342.frc.subsystems.shooter.Kicker;
 import org.team2342.frc.subsystems.shooter.Turret;
 import org.team2342.frc.subsystems.vision.Vision;
 import org.team2342.frc.subsystems.vision.VisionIO;
+import org.team2342.frc.subsystems.vision.VisionIOLimelight;
 import org.team2342.frc.subsystems.vision.VisionIOSim;
 import org.team2342.frc.util.FieldConstants;
 import org.team2342.frc.util.FiringSolver;
@@ -124,7 +125,9 @@ public class RobotContainer {
                 new ModuleIOTalonFX(CANConstants.BR_CAN, DriveConstants.ENCODER_OFFSETS[3]));
         vision =
             new Vision(
-                drive::addVisionMeasurement, drive::getTimestampedHeading, new VisionIO() {});
+                drive::addVisionMeasurement,
+                drive::getTimestampedHeading,
+                new VisionIOLimelight(VisionConstants.RIGHT_CAMERA_PARAMETERS, true));
 
         turret =
             new Turret(

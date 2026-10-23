@@ -78,9 +78,9 @@ public class PhoenixOdometry extends Thread {
       signalLock.lock();
       try {
         if (DriveConstants.isCANFD() && signals.length > 0) {
-          BaseStatusSignal.waitForAll(2.0 / (DriveConstants.IS_CANFD ? 250.0 : 100.0), signals);
+          BaseStatusSignal.waitForAll(2.0 / (DriveConstants.IS_CANFD ? 250.0 : 50.0), signals);
         } else {
-          Thread.sleep((long) (1000.0 / (DriveConstants.isCANFD() ? 250.0 : 100.0)));
+          Thread.sleep((long) (1000.0 / (DriveConstants.isCANFD() ? 250.0 : 50.0)));
           if (signals.length > 0) BaseStatusSignal.refreshAll(signals);
         }
       } catch (Exception e) {

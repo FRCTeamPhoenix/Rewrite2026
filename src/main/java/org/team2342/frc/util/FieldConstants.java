@@ -8,6 +8,8 @@ package org.team2342.frc.util;
 
 import org.team2342.lib.util.AllianceUtils;
 import org.wpilib.math.geometry.Pose2d;
+import org.wpilib.math.geometry.Rotation3d;
+import org.wpilib.math.geometry.Transform3d;
 import org.wpilib.math.geometry.Translation2d;
 import org.wpilib.math.geometry.Translation3d;
 import org.wpilib.math.util.Units;
@@ -82,7 +84,17 @@ public class FieldConstants {
     // Relevant reference points on alliance side
     public static final Translation3d topCenterPoint =
         new Translation3d(
-            AllianceUtils.getFieldLayout().getTagPose(26).get().getX() + width / 2.0,
+            AllianceUtils.getFieldLayout()
+                    .getTagPose(26)
+                    .get()
+                    .plus(
+                        new Transform3d(
+                            FieldConstants.fieldLength / 2.0,
+                            FieldConstants.fieldWidth / 2.0,
+                            0.0,
+                            Rotation3d.ZERO))
+                    .getX()
+                + width / 2.0,
             fieldWidth / 2.0,
             height);
     public static final Translation3d innerCenterPoint =
@@ -136,7 +148,10 @@ public class FieldConstants {
 
     // Relevant reference points on alliance side
     public static final Translation2d nearLeftCorner =
-        new Translation2d(LinesVertical.hubCenter - width / 2, Units.inchesToMeters(255));
+        new Translation2d(LinesVertical.hubCenter - width / 2, Units.inchesToMeters(255))
+            .plus(
+                new Translation2d(
+                    FieldConstants.fieldLength / 2.0, FieldConstants.fieldWidth / 2.0));
     public static final Translation2d nearRightCorner = Hub.nearLeftCorner;
     public static final Translation2d farLeftCorner =
         new Translation2d(LinesVertical.hubCenter + width / 2, Units.inchesToMeters(255));
